@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>互動百數表趣味數學探險</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Noto Sans TC & Fredoka -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .font-math {
+      font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* Pulsing & pop animations */
+    @keyframes popIn {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop {
+      animation: popIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .circle-tag {
+      border: 3px solid #ec4899 !important;
+      border-radius: 9999px !important;
+      background-color: #fdf2f8 !important;
+      color: #be185d !important;
+      font-weight: 800 !important;
+      transform: scale(1.08);
+      box-shadow: 0 0 0 3px #fbcfe8;
+    }
+    .box-tag {
+      border: 3.5px solid #0284c7;
+      border-radius: 8px;
+      background-color: #e0f2fe;
+      color: #0369a1;
+      font-weight: 800;
+      box-shadow: 0 0 0 3px #bae6fd;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-100">
+
+  <!-- Audio Synth for SFX -->
+  <script>
+    const AudioEngine = {
+      ctx: null,
+      muted: false,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      },
+      play(type) {
+        if (this.muted) return;
+        try {
+          this.init();
+          if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          if (type === 'click') {
+            osc.frequency.setValueAtTime(450, now);
+            osc.frequency.exponentialRampToValueAtTime(700, now + 0.05);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.start(now);
+            osc.stop(now + 0.05);
+          } else if (type === 'success') {
+            [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+              const o = this.ctx.createOscillator();
+              const g = this.ctx.createGain();
+              o.connect(g);
+              g.connect(this.ctx.destination);
+              o.frequency.value = freq;
+              g.gain.setValueAtTime(0.12, now + i * 0.08);
+              g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.2);
+              o.start(now + i * 0.08);
+              o.stop(now + i * 0.08 + 0.25);
+            });
+          } else if (type === 'highlight') {
+            osc.frequency.setValueAtTime(587.33, now);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.start(now);
+            osc.stop(now + 0.12);
+          } else if (type === 'wrong') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, now);
+            osc.frequency.exponentialRampToValueAtTime(110, now + 0.18);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
+          }
+        } catch (e) {
+          console.warn('Audio play prevented', e);
+        }
+      }
+    };
+  </script>
+
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <i class="fa-solid fa-table-cells text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
+            10×10 百數表 <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">數學探險館</span>
+          </h1>
+          <p class="text-xs text-slate-500">探究質數、因數與公倍數的奧妙規律</p>
+        </div>
+      </div>
+
+      <!-- Sound & Reset Controls -->
+      <div class="flex items-center gap-2">
+        <button id="soundToggleBtn" onclick="toggleMute()" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1.5 transition">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-indigo-600"></i>
+          <span id="soundText">音效開啟</span>
+        </button>
+        <button onclick="resetCurrentMode()" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-rotate-left"></i> 重設本頁
+        </button>
+      </div>
+    </div>
+
+    <!-- 5 Mode Tabs -->
+    <div class="max-w-6xl mx-auto px-2 sm:px-4 pb-2 sm:pb-3 overflow-x-auto">
+      <nav class="flex space-x-1 sm:space-x-2 min-w-max p-1 bg-slate-100/90 rounded-xl" id="navContainer">
+        <button onclick="switchMode('prime_composite')" id="tab-prime_composite" class="mode-tab active px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-white text-indigo-600 shadow-xs">
+          <i class="fa-solid fa-shapes"></i> 1. 質數合數
+        </button>
+        <button onclick="switchMode('factors')" id="tab-factors" class="mode-tab px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900">
+          <i class="fa-solid fa-magnifying-glass-chart"></i> 2. 因數與質因數
+        </button>
+        <button onclick="switchMode('prime_factorization')" id="tab-prime_factorization" class="mode-tab px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900">
+          <i class="fa-solid fa-network-wired"></i> 3. 質因數分解
+        </button>
+        <button onclick="switchMode('gcd')" id="tab-gcd" class="mode-tab px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900">
+          <i class="fa-solid fa-diagram-project"></i> 4. 最大公因數
+        </button>
+        <button onclick="switchMode('lcm')" id="tab-lcm" class="mode-tab px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900">
+          <i class="fa-solid fa-arrow-trend-up"></i> 5. 最小公倍數
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- Left Column: Instructions and Status Card -->
+    <section class="lg:col-span-4 flex flex-col gap-4">
+      
+      <!-- Current Mode Dynamic Information Card -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-24 h-24 -mr-6 -mt-6 bg-gradient-to-br from-indigo-100 to-transparent rounded-full pointer-events-none opacity-60"></div>
+        
+        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-600 mb-1" id="modeBadge">
+          <span class="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+          模式任務引導
+        </div>
+        
+        <h2 id="modeTitle" class="text-xl font-bold text-slate-800 mb-2">質數合數挑戰</h2>
+        <div id="modeDescription" class="text-sm text-slate-600 leading-relaxed mb-4">
+          請仔細閱讀題目要求，並在百數表中找出符合條件的所有數字！
+        </div>
+
+        <!-- Mode-specific Sub-controls container -->
+        <div id="modeSubControls" class="space-y-3 pt-3 border-t border-slate-100">
+          <!-- Dynamically populated via JS -->
+        </div>
+      </div>
+
+      <!-- Quick Tips & Math Knowledge Card -->
+      <div class="bg-amber-50/70 border border-amber-200/60 rounded-2xl p-4 text-xs text-amber-900">
+        <div class="flex items-center gap-2 font-bold mb-1.5 text-amber-800 text-sm">
+          <i class="fa-regular fa-lightbulb text-amber-500"></i> 小朋友數學筆記
+        </div>
+        <div id="knowledgeSnippet" class="space-y-1 leading-relaxed">
+          <p>• <strong>質數 (Prime)</strong>：大於 1 的整數，除了 1 和自己以外沒有其他因數（例如 2, 3, 5, 7）。</p>
+          <p>• <strong>合數 (Composite)</strong>：大於 1 的整數，除了 1 和自己外還有其他因數（例如 4, 6, 8, 9）。</p>
+          <p>• <strong>特別注意</strong>：數字 <strong>1 既不是質數，也不是合數</strong> 喔！</p>
+        </div>
+      </div>
+
+      <!-- Live Selection Status (Used in GCD & LCM selection) -->
+      <div id="selectionSummaryCard" class="hidden bg-white rounded-2xl p-4 border border-indigo-100 shadow-xs">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">已選擇的兩數</h3>
+        <div class="flex items-center gap-3">
+          <div id="selectedSlot1" class="flex-1 py-2 px-3 bg-indigo-50 border-2 border-dashed border-indigo-300 rounded-xl text-center text-indigo-700 font-bold font-math text-xl">
+            ?
+          </div>
+          <span class="text-slate-400 font-bold">&</span>
+          <div id="selectedSlot2" class="flex-1 py-2 px-3 bg-indigo-50 border-2 border-dashed border-indigo-300 rounded-xl text-center text-indigo-700 font-bold font-math text-xl">
+            ?
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Column: 10x10 Hundred Chart & Dynamic Floating Under-Cell Windows -->
+    <section class="lg:col-span-8 flex flex-col gap-4">
+      
+      <!-- Chart Controls Header -->
+      <div class="bg-white p-3 sm:px-5 sm:py-3.5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-slate-700 text-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-border-all text-indigo-500"></i> 1 ~ 100 百數方格
+          </span>
+          <span id="gridHintBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+            請點選格子
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2" id="gridActionButtons">
+          <!-- Dynamically populated buttons -->
+        </div>
+      </div>
+
+      <!-- 10x10 Grid Container with Anchorable Area -->
+      <div id="hundredGridWrapper" class="relative bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-sm transition-all duration-200">
+        <div id="hundredGrid" class="grid grid-cols-10 gap-1 sm:gap-2 aspect-square max-w-full">
+          <!-- 100 cells generated via JS -->
+        </div>
+
+        <!-- Floating Under-Cell Window -->
+        <div id="floatingDetailWindow" class="absolute z-20 hidden bg-white rounded-3xl border-2 shadow-2xl p-4 sm:p-5 animate-pop transition-all duration-150">
+          <!-- Arrow Indicator pointing to the cell -->
+          <div id="floatingArrow" class="absolute -top-[9px] w-4 h-4 bg-white border-t-2 border-l-2 transform rotate-45 -translate-x-1/2"></div>
+          <!-- Window Content Body -->
+          <div id="floatingWindowBody"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Modal for GCD (4) & LCM (5) -->
+  <div id="mathDialogBackdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 hidden opacity-0 transition-opacity duration-300">
+    <div id="mathDialogContainer" class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-100 scale-95 transition-transform duration-300">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-lg">
+            <i id="dialogIcon" class="fa-solid fa-calculator"></i>
+          </div>
+          <div>
+            <h3 id="dialogTitle" class="text-lg font-bold">兩數因數與公因數探索</h3>
+            <p id="dialogSubtitle" class="text-xs text-indigo-100">點擊找出共同的數並標記最大值</p>
+          </div>
+        </div>
+        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body Content -->
+      <div id="dialogContent" class="p-6 overflow-y-auto space-y-6">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div id="dialogStatusNote" class="text-xs text-slate-500 font-medium">
+          請依照指示完成標記
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="closeModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200/70 rounded-xl transition">
+            關閉
+          </button>
+          <button id="dialogVerifyBtn" onclick="verifyModalAction()" class="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check"></i> 檢查作答
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    /* Mathematical Utilities */
+    const MathUtils = {
+      isPrime(n) {
+        if (n <= 1) return false;
+        if (n <= 3) return true;
+        if (n % 2 === 0 || n % 3 === 0) return false;
+        for (let i = 5; i * i <= n; i += 6) {
+          if (n % i === 0 || n % (i + 2) === 0) return false;
+        }
+        return true;
+      },
+      isComposite(n) {
+        return n > 1 && !this.isPrime(n);
+      },
+      getFactors(n) {
+        if (n <= 0) return [];
+        const factors = [];
+        for (let i = 1; i * i <= n; i++) {
+          if (n % i === 0) {
+            factors.push(i);
+            if (i !== n / i) {
+              factors.push(n / i);
+            }
+          }
+        }
+        return factors.sort((a, b) => a - b);
+      },
+      getPrimeFactorization(n) {
+        if (n <= 1) return [];
+        let temp = n;
+        const factors = [];
+        for (let d = 2; d * d <= temp; d++) {
+          if (temp % d === 0) {
+            let count = 0;
+            while (temp % d === 0) {
+              count++;
+              temp /= d;
+            }
+            factors.push({ prime: d, count });
+          }
+        }
+        if (temp > 1) {
+          factors.push({ prime: temp, count: 1 });
+        }
+        return factors;
+      },
+      gcd(a, b) {
+        let x = Math.abs(a);
+        let y = Math.abs(b);
+        while (y) {
+          const t = y;
+          y = x % y;
+          x = t;
+        }
+        return x;
+      },
+      lcm(a, b) {
+        if (a === 0 || b === 0) return 0;
+        return Math.abs(a * b) / this.gcd(a, b);
+      },
+      getMultiples(n, count = 5) {
+        const arr = [];
+        for (let i = 1; i <= count; i++) {
+          arr.push(n * i);
+        }
+        return arr;
+      }
+    };
+  </script>
+
+  <script>
+    const AppState = {
+      currentMode: 'prime_composite',
+      
+      // Mode 1: Prime & Composite
+      primeQuestionType: 'prime',
+      selectedCells: new Set(),
+      
+      // Mode 2: Factors of single number
+      focusedNumber: 53,
+      selectedPrimeFactors: new Set(),
+      
+      // Mode 3: Prime Factorization
+      factorizationNumber: 60,
+      
+      // Mode 4 & 5: Two numbers picking
+      pickedPair: [],
+      modalData: null
+    };
+
+    function toggleMute() {
+      AudioEngine.muted = !AudioEngine.muted;
+      const icon = document.getElementById('soundIcon');
+      const text = document.getElementById('soundText');
+      if (AudioEngine.muted) {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-400';
+        text.innerText = '音效靜音';
+      } else {
+        icon.className = 'fa-solid fa-volume-high text-indigo-600';
+        text.innerText = '音效開啟';
+        AudioEngine.play('click');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bg = type === 'success' ? 'bg-emerald-600 text-white' : 
+                 type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-white';
+      const icon = type === 'success' ? 'fa-circle-check' : 
+                   type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info';
+
+      toast.className = `${bg} px-4 py-3 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 animate-pop pointer-events-auto transition-all`;
+      toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(() => toast.remove(), 250);
+      }, 2600);
+    }
+  </script>
+
+  <script>
+    function renderHundredGrid() {
+      const grid = document.getElementById('hundredGrid');
+      grid.innerHTML = '';
+
+      for (let i = 1; i <= 100; i++) {
+        const cell = document.createElement('button');
+        cell.id = `cell-${i}`;
+        cell.dataset.number = i;
+        cell.className = `hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-200 transition-all duration-150 relative select-none hover:border-indigo-400 hover:shadow-xs focus:outline-hidden ${getCellBaseStyle(i)}`;
+        cell.innerHTML = `<span>${i}</span>`;
+        cell.addEventListener('click', () => handleCellClick(i));
+        grid.appendChild(cell);
+      }
+      refreshGridDecorations();
+    }
+
+    function refreshGridDecorations() {
+      if (!AppState) return;
+      switch (AppState.currentMode) {
+        case 'prime_composite':
+          refreshPrimeGridVisuals();
+          break;
+        case 'factors':
+          if (AppState.focusedNumber) {
+            for (let i = 1; i <= 100; i++) {
+              const cell = document.getElementById(`cell-${i}`);
+              if (!cell) continue;
+              if (i === AppState.focusedNumber) {
+                cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border-3 border-indigo-600 bg-indigo-600 text-white shadow-md scale-105 z-10';
+              } else {
+                cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-indigo-400';
+              }
+            }
+          }
+          break;
+        case 'prime_factorization':
+          if (AppState.factorizationNumber) {
+            for (let i = 1; i <= 100; i++) {
+              const cell = document.getElementById(`cell-${i}`);
+              if (!cell) continue;
+              if (i === AppState.factorizationNumber) {
+                cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border-3 border-violet-600 bg-violet-600 text-white shadow-md scale-105 z-10';
+              } else {
+                cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-violet-400';
+              }
+            }
+          }
+          break;
+        case 'gcd':
+        case 'lcm':
+          refreshPairGridVisuals();
+          break;
+      }
+    }
+
+    function getCellBaseStyle(n) {
+      return 'bg-white text-slate-700 hover:bg-indigo-50/50';
+    }
+
+    function handleCellClick(number) {
+      AudioEngine.play('click');
+
+      switch (AppState.currentMode) {
+        case 'prime_composite':
+          togglePrimeCompositeSelection(number);
+          break;
+        case 'factors':
+          setFactorsNumber(number);
+          break;
+        case 'prime_factorization':
+          setFactorizationNumber(number);
+          break;
+        case 'gcd':
+        case 'lcm':
+          handlePairSelection(number);
+          break;
+      }
+    }
+  </script>
+
+  <script>
+    /* Floating Under-Cell Window Positioning Logic */
+    function positionFloatingWindow(cellNumber, borderColorClass = 'border-indigo-300') {
+      const cell = document.getElementById(`cell-${cellNumber}`);
+      const wrapper = document.getElementById('hundredGridWrapper');
+      const windowEl = document.getElementById('floatingDetailWindow');
+      const arrowEl = document.getElementById('floatingArrow');
+
+      if (!cell || !wrapper || !windowEl) return;
+
+      windowEl.classList.remove('hidden');
+      windowEl.className = `absolute z-20 bg-white rounded-3xl border-2 ${borderColorClass} shadow-2xl p-4 sm:p-5 animate-pop transition-all duration-150`;
+      arrowEl.className = `absolute -top-[9px] w-4 h-4 bg-white border-t-2 border-l-2 ${borderColorClass} transform rotate-45 -translate-x-1/2`;
+
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const cellRect = cell.getBoundingClientRect();
+
+      const cellTop = cellRect.top - wrapperRect.top;
+      const cellLeft = cellRect.left - wrapperRect.left;
+      const cellWidth = cellRect.width;
+      const cellHeight = cellRect.height;
+      const cellCenterX = cellLeft + (cellWidth / 2);
+
+      // Width of window: max 520px or fluid width based on wrapper
+      const targetWidth = Math.min(wrapperRect.width - 24, 520);
+      windowEl.style.width = `${targetWidth}px`;
+
+      // Clamp horizontal position so it never overflows wrapper sides
+      let windowLeft = cellCenterX - (targetWidth / 2);
+      windowLeft = Math.max(10, Math.min(windowLeft, wrapperRect.width - targetWidth - 10));
+
+      const windowTop = cellTop + cellHeight + 10;
+
+      windowEl.style.left = `${windowLeft}px`;
+      windowEl.style.top = `${windowTop}px`;
+
+      // Point arrow to cell center
+      const arrowLeft = cellCenterX - windowLeft;
+      arrowEl.style.left = `${arrowLeft}px`;
+
+      // Ensure wrapper height expands so the floating window is completely visible and never clipped
+      const neededHeight = windowTop + windowEl.offsetHeight + 24;
+      wrapper.style.minHeight = `${Math.max(wrapperRect.width, neededHeight)}px`;
+
+      // Smooth scroll if needed
+      windowEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closeFloatingWindow() {
+      const windowEl = document.getElementById('floatingDetailWindow');
+      const wrapper = document.getElementById('hundredGridWrapper');
+      if (windowEl) windowEl.classList.add('hidden');
+      if (wrapper) wrapper.style.minHeight = '';
+    }
+
+    window.addEventListener('resize', () => {
+      if (AppState.currentMode === 'factors' && AppState.focusedNumber) {
+        positionFloatingWindow(AppState.focusedNumber, 'border-indigo-300');
+      } else if (AppState.currentMode === 'prime_factorization' && AppState.factorizationNumber) {
+        positionFloatingWindow(AppState.factorizationNumber, 'border-violet-300');
+      }
+    });
+  </script>
+
+  <script>
+    /* Mode 1: Prime & Composite */
+    function setupPrimeCompositeMode() {
+      closeFloatingWindow();
+      AppState.selectedCells.clear();
+      
+      const title = document.getElementById('modeTitle');
+      const desc = document.getElementById('modeDescription');
+      const subControls = document.getElementById('modeSubControls');
+      const snippet = document.getElementById('knowledgeSnippet');
+      const hintBadge = document.getElementById('gridHintBadge');
+      const actions = document.getElementById('gridActionButtons');
+
+      title.innerText = AppState.primeQuestionType === 'prime' ? '任務：找出所有「質數」' : '任務：找出所有「合數」';
+      desc.innerHTML = AppState.primeQuestionType === 'prime'
+        ? '請在 1～100 中點選所有的<strong>質數</strong>（只能被 1 和自己整除的數）。選好後按下檢查答案！'
+        : '請在 1～100 中點選所有的<strong>合數</strong>（除了 1 和自己之外還有其他因數的數）。選好後按下檢查答案！';
+
+      hintBadge.innerText = AppState.primeQuestionType === 'prime' ? '題目：找出質數' : '題目：找出合數';
+
+      snippet.innerHTML = `
+        <p>• <strong>質數</strong>：1~100 之間共有 <strong>25 個質數</strong>，最小的質數是 <strong>2</strong>（也是唯一的偶數質數）。</p>
+        <p>• <strong>合數</strong>：1~100 之間共有 <strong>74 個合數</strong>。</p>
+        <p>• <strong>重要防呆</strong>：數字 <strong>1</strong> 只有 1 個因數，所以<strong>非質數也非合數</strong>喔！</p>
+      `;
+
+      subControls.innerHTML = `
+        <div class="flex items-center gap-2 p-1 bg-slate-100 rounded-xl">
+          <button onclick="setPrimeQuestionType('prime')" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition ${AppState.primeQuestionType === 'prime' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+            <i class="fa-solid fa-gem text-indigo-500 mr-1"></i> 找質數 (25個)
+          </button>
+          <button onclick="setPrimeQuestionType('composite')" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition ${AppState.primeQuestionType === 'composite' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'}">
+            <i class="fa-solid fa-cubes text-amber-500 mr-1"></i> 找合數 (74個)
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between text-xs font-medium text-slate-500 px-1 pt-1">
+          <span>已選取數量：<strong id="primeSelectedCount" class="text-indigo-600 font-math text-sm">0</strong> 個</span>
+          <span id="primeAccuracyBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">尚未檢查</span>
+        </div>
+      `;
+
+      actions.innerHTML = `
+        <button onclick="checkPrimeCompositeAnswers()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5">
+          <i class="fa-solid fa-check"></i> 檢查答案
+        </button>
+        <button onclick="revealPrimeCompositeAnswers()" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition flex items-center gap-1">
+          <i class="fa-regular fa-eye"></i> 顯示正確答案
+        </button>
+        <button onclick="clearPrimeSelections()" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition flex items-center gap-1">
+          <i class="fa-solid fa-eraser"></i> 清除選取
+        </button>
+      `;
+
+      refreshPrimeGridVisuals();
+    }
+
+    function setPrimeQuestionType(type) {
+      if (AppState.primeQuestionType === type) return;
+      AppState.primeQuestionType = type;
+      AppState.selectedCells.clear();
+      AudioEngine.play('click');
+      setupPrimeCompositeMode();
+    }
+
+    function togglePrimeCompositeSelection(n) {
+      if (AppState.selectedCells.has(n)) {
+        AppState.selectedCells.delete(n);
+      } else {
+        AppState.selectedCells.add(n);
+      }
+      updatePrimeSelectedCount();
+      refreshPrimeGridVisuals();
+    }
+
+    function updatePrimeSelectedCount() {
+      const countEl = document.getElementById('primeSelectedCount');
+      if (countEl) countEl.innerText = AppState.selectedCells.size;
+    }
+
+    function clearPrimeSelections() {
+      AppState.selectedCells.clear();
+      updatePrimeSelectedCount();
+      const badge = document.getElementById('primeAccuracyBadge');
+      if (badge) {
+        badge.className = 'text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600';
+        badge.innerText = '尚未檢查';
+      }
+      refreshPrimeGridVisuals();
+      AudioEngine.play('click');
+    }
+
+    function checkPrimeCompositeAnswers() {
+      const isTargetPrime = AppState.primeQuestionType === 'prime';
+      let correctPicks = 0;
+      let wrongPicks = 0;
+      let totalTargets = 0;
+
+      for (let i = 1; i <= 100; i++) {
+        const isTarget = isTargetPrime ? MathUtils.isPrime(i) : MathUtils.isComposite(i);
+        if (isTarget) totalTargets++;
+
+        const isSelected = AppState.selectedCells.has(i);
+        const cell = document.getElementById(`cell-${i}`);
+        if (!cell) continue;
+
+        if (isSelected) {
+          if (isTarget) {
+            correctPicks++;
+            cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border-2 border-emerald-500 bg-emerald-100 text-emerald-800 transition-all';
+          } else {
+            wrongPicks++;
+            cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border-2 border-rose-500 bg-rose-100 text-rose-800 transition-all animate-bounce';
+          }
+        } else {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-200 bg-white text-slate-700 transition-all';
+        }
+      }
+
+      const badge = document.getElementById('primeAccuracyBadge');
+      if (wrongPicks === 0 && correctPicks === totalTargets) {
+        AudioEngine.play('success');
+        badge.className = 'text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold';
+        badge.innerText = `太厲害了！全對 (${correctPicks}/${totalTargets})`;
+        showToast(`🎉 恭喜！你完美找出了所有的${isTargetPrime ? '質數' : '合數'}！`, 'success');
+      } else {
+        AudioEngine.play(wrongPicks > 0 ? 'wrong' : 'highlight');
+        badge.className = 'text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold';
+        badge.innerText = `答對 ${correctPicks}/${totalTargets}，點錯 ${wrongPicks} 個`;
+        showToast(`找到 ${correctPicks} 個正確，有 ${wrongPicks} 個點錯囉！請看紅框更正。`, 'info');
+      }
+    }
+
+    function revealPrimeCompositeAnswers() {
+      const isTargetPrime = AppState.primeQuestionType === 'prime';
+      AppState.selectedCells.clear();
+
+      for (let i = 1; i <= 100; i++) {
+        const isTarget = isTargetPrime ? MathUtils.isPrime(i) : MathUtils.isComposite(i);
+        const cell = document.getElementById(`cell-${i}`);
+        if (!cell) continue;
+
+        if (isTarget) {
+          AppState.selectedCells.add(i);
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border-2 border-indigo-500 bg-indigo-100 text-indigo-800 shadow-xs transition-all';
+        } else if (i === 1) {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-300 bg-slate-100 text-slate-400';
+        } else {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-200 bg-white text-slate-400 opacity-60';
+        }
+      }
+      updatePrimeSelectedCount();
+      AudioEngine.play('success');
+      showToast(`已為您展示 1~100 中所有的${isTargetPrime ? '質數' : '合數'}！`, 'info');
+    }
+
+    function refreshPrimeGridVisuals() {
+      for (let i = 1; i <= 100; i++) {
+        const cell = document.getElementById(`cell-${i}`);
+        if (!cell) continue;
+        if (AppState.selectedCells.has(i)) {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-800 shadow-xs scale-105 transition-all';
+        } else {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-indigo-400 transition-all';
+        }
+      }
+    }
+  </script>
+
+  <script>
+    /* Mode 2: Factors & Prime Factors (Pop under clicked cell) */
+    function setupFactorsMode() {
+      const title = document.getElementById('modeTitle');
+      const desc = document.getElementById('modeDescription');
+      const subControls = document.getElementById('modeSubControls');
+      const snippet = document.getElementById('knowledgeSnippet');
+      const hintBadge = document.getElementById('gridHintBadge');
+      const actions = document.getElementById('gridActionButtons');
+
+      title.innerText = '因數與質因數探索';
+      desc.innerHTML = '在百數表中<strong>點選任意數字</strong>，視窗將會直接<strong>呈現在該數字正下方</strong>！請點擊標記出哪些因數是<strong>「質因數」</strong>！';
+      hintBadge.innerText = `目前選擇數字：${AppState.focusedNumber}`;
+
+      snippet.innerHTML = `
+        <p>• <strong>因數 (Factor)</strong>：能將該整數整除的整數。</p>
+        <p>• <strong>質因數 (Prime Factor)</strong>：如果一個數的因數同時也是「質數」，那麼它就是質因數！</p>
+        <p>• <em>範例</em>：12 的因數有 1, 2, 3, 4, 6, 12，其中只有 <strong>2 和 3 是質因數</strong>。</p>
+      `;
+
+      subControls.innerHTML = `
+        <div class="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-600">當前探究的數字：</span>
+            <span class="font-math font-bold text-xl text-indigo-700" id="currentFocusedNumLabel">${AppState.focusedNumber}</span>
+          </div>
+          <p class="text-xs text-indigo-900/80">視窗已呈現在該數字下方，點擊圓形泡泡把「質因數」圈起來！</p>
+        </div>
+      `;
+
+      actions.innerHTML = `
+        <div class="flex items-center gap-1.5 text-xs text-slate-500">
+          <i class="fa-solid fa-hand-pointer text-indigo-500"></i> 點選任意格子，視窗即時移動至該數字下方
+        </div>
+      `;
+
+      setFactorsNumber(AppState.focusedNumber);
+    }
+
+    function setFactorsNumber(num) {
+      AppState.focusedNumber = num;
+      AppState.selectedPrimeFactors.clear();
+
+      for (let i = 1; i <= 100; i++) {
+        const cell = document.getElementById(`cell-${i}`);
+        if (!cell) continue;
+        if (i === num) {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border-3 border-indigo-600 bg-indigo-600 text-white shadow-md scale-105 z-10';
+        } else {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-indigo-400';
+        }
+      }
+
+      const badge = document.getElementById('gridHintBadge');
+      if (badge) badge.innerText = `目前查看數字：${num}`;
+      const sideLabel = document.getElementById('currentFocusedNumLabel');
+      if (sideLabel) sideLabel.innerText = num;
+
+      renderFactorFloatingWindow(num);
+    }
+
+    function renderFactorFloatingWindow(num) {
+      const windowBody = document.getElementById('floatingWindowBody');
+      const factors = MathUtils.getFactors(num);
+
+      let factorChipsHtml = factors.map(f => {
+        const isSelected = AppState.selectedPrimeFactors.has(f);
+        return `
+          <button onclick="togglePrimeFactorChip(${f})" id="factor-chip-${f}" 
+            class="relative px-4 py-2 rounded-full font-math font-bold text-base transition-all duration-150 ${isSelected ? 'circle-tag' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'}">
+            ${f}
+          </button>
+        `;
+      }).join('');
+
+      windowBody.innerHTML = `
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-lg bg-indigo-600 text-white text-xs font-bold font-math">數字 ${num}</span>
+            <h3 class="text-base font-bold text-slate-800">因數清單與質因數標記</h3>
+          </div>
+          <button onclick="closeFloatingWindow()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-500 mt-2">點擊下列因數泡泡，選出屬於「質因數」的數字（圈起來變色）：</p>
+
+        <div class="pt-3">
+          <div class="text-xs font-semibold text-slate-500 mb-2 flex items-center justify-between">
+            <span>所有因數 (${factors.length} 個)：</span>
+            <span class="text-pink-600 font-semibold text-xs">● 圈起粉色表示為質因數</span>
+          </div>
+          <div class="flex flex-wrap gap-2.5 items-center">
+            ${factorChipsHtml}
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs text-slate-400">選取完成後請按檢查</span>
+          <button onclick="verifyPrimeFactorsSelection(${num})" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check"></i> 檢查質因數
+          </button>
+        </div>
+
+        <div id="factorVerificationResult" class="mt-3 p-3 rounded-xl hidden text-xs font-medium animate-pop"></div>
+      `;
+
+      positionFloatingWindow(num, 'border-indigo-300');
+    }
+
+    function togglePrimeFactorChip(f) {
+      if (AppState.selectedPrimeFactors.has(f)) {
+        AppState.selectedPrimeFactors.delete(f);
+      } else {
+        AppState.selectedPrimeFactors.add(f);
+      }
+      AudioEngine.play('highlight');
+      renderFactorFloatingWindow(AppState.focusedNumber);
+    }
+
+    function verifyPrimeFactorsSelection(num) {
+      const factors = MathUtils.getFactors(num);
+      const correctPrimes = new Set(factors.filter(f => MathUtils.isPrime(f)));
+      const userSelected = AppState.selectedPrimeFactors;
+
+      let allCorrect = true;
+      if (correctPrimes.size !== userSelected.size) {
+        allCorrect = false;
+      } else {
+        for (const p of correctPrimes) {
+          if (!userSelected.has(p)) {
+            allCorrect = false;
+            break;
+          }
+        }
+      }
+
+      const resultBox = document.getElementById('factorVerificationResult');
+      resultBox.classList.remove('hidden');
+
+      if (allCorrect) {
+        AudioEngine.play('success');
+        resultBox.className = 'mt-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2 animate-pop';
+        const primeListStr = Array.from(correctPrimes).join(', ') || '無質因數（數字1）';
+        resultBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-base"></i> <span><strong>太棒了，完全正確！</strong> ${num} 的質因數就是：<strong>${primeListStr}</strong>！</span>`;
+        showToast('答對了！你成功標記出所有的質因數！', 'success');
+      } else {
+        AudioEngine.play('wrong');
+        resultBox.className = 'mt-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2 animate-pop';
+        resultBox.innerHTML = `
+          <i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i> 
+          <div>
+            <span><strong>還差一點點喔！</strong> 請確認：① 不能選 1（1不是質數）② 不能選合數（例如4, 6...）③ 所有質數都要圈選喔！</span>
+          </div>
+        `;
+      }
+    }
+  </script>
+
+  <script>
+    /* Mode 3: Prime Factorization (Pop under clicked cell, No standard power notation, font-sizes aligned) */
+    function setupFactorizationMode() {
+      const title = document.getElementById('modeTitle');
+      const desc = document.getElementById('modeDescription');
+      const subControls = document.getElementById('modeSubControls');
+      const snippet = document.getElementById('knowledgeSnippet');
+      const hintBadge = document.getElementById('gridHintBadge');
+      const actions = document.getElementById('gridActionButtons');
+
+      title.innerText = '質因數分解探索';
+      desc.innerHTML = '在百數表中<strong>點選任意數字</strong>，分解視窗將會直接<strong>呈現在該數字正下方</strong>！呈現質數連乘展開式與該數的所有質因數。';
+      hintBadge.innerText = `目前選擇數字：${AppState.factorizationNumber}`;
+
+      snippet.innerHTML = `
+        <p>• <strong>質因數分解</strong>：將一個大於 1 的整數表示成「質數連乘積」的形式。</p>
+        <p>• <strong>算術基本定理</strong>：除了乘積順序外，每個大於 1 的整數其質因數分解式是唯一的！</p>
+        <p>• <em>範例</em>：60 的質數連乘展開式為 <strong>60 = 2 × 2 × 3 × 5</strong>，質因數包括 <strong>2, 3, 5</strong>。</p>
+      `;
+
+      subControls.innerHTML = `
+        <div class="p-3 bg-violet-50/70 border border-violet-200 rounded-xl space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-600">當前分解的數字：</span>
+            <span class="font-math font-bold text-xl text-violet-700" id="currentFactorizationNumLabel">${AppState.factorizationNumber}</span>
+          </div>
+          <p class="text-xs text-violet-900/80">視窗已直接浮現在上方數字下方，點選任意格子可即時切換！</p>
+        </div>
+      `;
+
+      actions.innerHTML = `
+        <span class="text-xs text-slate-500"><i class="fa-solid fa-wand-magic-sparkles text-violet-500"></i> 即時呈現質數連乘展開式與質因數</span>
+      `;
+
+      setFactorizationNumber(AppState.factorizationNumber);
+    }
+
+    function setFactorizationNumber(num) {
+      AppState.factorizationNumber = num;
+
+      for (let i = 1; i <= 100; i++) {
+        const cell = document.getElementById(`cell-${i}`);
+        if (!cell) continue;
+        if (i === num) {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border-3 border-violet-600 bg-violet-600 text-white shadow-md scale-105 z-10';
+        } else {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-violet-400';
+        }
+      }
+
+      const badge = document.getElementById('gridHintBadge');
+      if (badge) badge.innerText = `目前查看數字：${num}`;
+      const sideLabel = document.getElementById('currentFactorizationNumLabel');
+      if (sideLabel) sideLabel.innerText = num;
+
+      renderFactorizationFloatingWindow(num);
+    }
+
+    function renderFactorizationFloatingWindow(num) {
+      const windowBody = document.getElementById('floatingWindowBody');
+
+      if (num === 1) {
+        windowBody.innerHTML = `
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-lg bg-slate-200 text-slate-700 text-xs font-bold font-math">數字 1</span>
+              <h3 class="text-base font-bold text-slate-700">特別提示</h3>
+            </div>
+            <button onclick="closeFloatingWindow()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition">
+              <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+          </div>
+          <div class="text-center py-5">
+            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-2 text-xl font-math font-bold">1</div>
+            <h4 class="text-sm font-bold text-slate-700">數字 1 既非質數也不是合數</h4>
+            <p class="text-xs text-slate-500 mt-1">數學上的「質因數分解」專門針對大於 1 的正整數喔！請點選其他數字試試。</p>
+          </div>
+        `;
+        positionFloatingWindow(num, 'border-violet-300');
+        return;
+      }
+
+      const primeFactors = MathUtils.getPrimeFactorization(num);
+      const isPrime = MathUtils.isPrime(num);
+
+      // Expanded form: e.g. 2 × 2 × 3 × 5
+      const expandedList = [];
+      primeFactors.forEach(pf => {
+        for (let i = 0; i < pf.count; i++) {
+          expandedList.push(pf.prime);
+        }
+      });
+      const expandedFormula = expandedList.join(' × ');
+
+      // Distinct prime factors: e.g. 2, 3, 5
+      const distinctPrimesStr = primeFactors.map(pf => pf.prime).join(', ');
+
+      windowBody.innerHTML = `
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-lg bg-violet-600 text-white text-xs font-bold font-math">數字 ${num}</span>
+            <h3 class="text-base font-bold text-slate-800">質因數分解結果</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs px-2.5 py-0.5 rounded-full ${isPrime ? 'bg-amber-100 text-amber-800 font-bold' : 'bg-violet-100 text-violet-800 font-bold'}">
+              ${isPrime ? '質數 Prime' : '合數 Composite'}
+            </span>
+            <button onclick="closeFloatingWindow()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition">
+              <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="py-3.5 space-y-3">
+          <!-- 1. 質數連乘展開式 -->
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 shadow-2xs">
+            <div class="text-xs text-slate-500 font-bold mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-calculator text-violet-600"></i>
+              質數連乘展開式：
+            </div>
+            <div class="text-xl sm:text-2xl font-math font-bold text-slate-800 tracking-wide">
+              ${num} = ${expandedFormula}
+            </div>
+          </div>
+
+          <!-- 2. 該數的質因數包括 (字體大小與上方展開式完全相同) -->
+          <div class="p-4 rounded-2xl bg-violet-50/80 border border-violet-200/90 shadow-2xs">
+            <div class="text-xs text-violet-700 font-bold mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-seedling text-emerald-600"></i>
+              該數的質因數包括：
+            </div>
+            <div class="text-xl sm:text-2xl font-math font-bold text-violet-900 tracking-wide">
+              ${distinctPrimesStr}
+            </div>
+          </div>
+        </div>
+      `;
+
+      positionFloatingWindow(num, 'border-violet-300');
+    }
+  </script>
+
+  <script>
+    /* Mode 4: GCD (Modal window for two numbers) */
+    function setupGcdMode() {
+      closeFloatingWindow();
+      AppState.pickedPair = [];
+      const title = document.getElementById('modeTitle');
+      const desc = document.getElementById('modeDescription');
+      const subControls = document.getElementById('modeSubControls');
+      const snippet = document.getElementById('knowledgeSnippet');
+      const hintBadge = document.getElementById('gridHintBadge');
+      const actions = document.getElementById('gridActionButtons');
+
+      title.innerText = '最大公因數 (GCD) 互動';
+      desc.innerHTML = '請在百數表中<strong>點選 2 個數字</strong>，系統會跳出因數視窗，引導你找出兩者的<strong>公因數</strong>並框選出<strong>最大公因數</strong>！';
+      hintBadge.innerText = '請點選第 1 個數字';
+
+      snippet.innerHTML = `
+        <p>• <strong>公因數 (Common Factor)</strong>：同時能整除兩個（或多個）整數的共同因數。</p>
+        <p>• <strong>最大公因數 (GCD)</strong>：在所有公因數中數值最大的那一個！</p>
+        <p>• <em>範例</em>：12 與 18 的公因數有 1, 2, 3, 6；其中 <strong>6 是最大公因數</strong>。</p>
+      `;
+
+      subControls.innerHTML = `
+        <div class="space-y-2">
+          <div class="text-xs font-semibold text-slate-600">已挑選的探究數字：</div>
+          <div class="flex items-center gap-2">
+            <div id="pairTag1" class="flex-1 py-2 px-3 bg-slate-100 border border-slate-300 rounded-xl text-center font-math font-bold text-slate-400 text-base">
+              選擇第 1 數
+            </div>
+            <span class="text-slate-400 font-bold">&</span>
+            <div id="pairTag2" class="flex-1 py-2 px-3 bg-slate-100 border border-slate-300 rounded-xl text-center font-math font-bold text-slate-400 text-base">
+              選擇第 2 數
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 pt-1">選滿 2 個數字後會自動彈出因數探險小視窗！</p>
+        </div>
+      `;
+
+      actions.innerHTML = `
+        <button onclick="resetPairSelection()" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition flex items-center gap-1">
+          <i class="fa-solid fa-rotate-left"></i> 重選兩數
+        </button>
+      `;
+
+      refreshPairGridVisuals();
+    }
+
+    function handlePairSelection(num) {
+      if (AppState.pickedPair.length >= 2) {
+        AppState.pickedPair = [num];
+      } else {
+        AppState.pickedPair.push(num);
+      }
+
+      updatePairTags();
+      refreshPairGridVisuals();
+
+      if (AppState.pickedPair.length === 2) {
+        AudioEngine.play('success');
+        setTimeout(() => {
+          if (AppState.currentMode === 'gcd') {
+            openGcdModal(AppState.pickedPair[0], AppState.pickedPair[1]);
+          } else if (AppState.currentMode === 'lcm') {
+            openLcmModal(AppState.pickedPair[0], AppState.pickedPair[1]);
+          }
+        }, 300);
+      }
+    }
+
+    function resetPairSelection() {
+      AppState.pickedPair = [];
+      updatePairTags();
+      refreshPairGridVisuals();
+      AudioEngine.play('click');
+    }
+
+    function updatePairTags() {
+      const tag1 = document.getElementById('pairTag1');
+      const tag2 = document.getElementById('pairTag2');
+      const hint = document.getElementById('gridHintBadge');
+
+      if (!tag1 || !tag2) return;
+
+      if (AppState.pickedPair.length === 0) {
+        tag1.innerText = '選擇第 1 數';
+        tag1.className = 'flex-1 py-2 px-3 bg-slate-100 border border-slate-300 rounded-xl text-center font-math font-bold text-slate-400 text-base';
+        tag2.innerText = '選擇第 2 數';
+        tag2.className = 'flex-1 py-2 px-3 bg-slate-100 border border-slate-300 rounded-xl text-center font-math font-bold text-slate-400 text-base';
+        if (hint) hint.innerText = '請點選第 1 個數字';
+      } else if (AppState.pickedPair.length === 1) {
+        tag1.innerText = AppState.pickedPair[0];
+        tag1.className = 'flex-1 py-2 px-3 bg-indigo-50 border-2 border-indigo-500 rounded-xl text-center font-math font-bold text-indigo-700 text-base shadow-xs';
+        tag2.innerText = '請點選第 2 數';
+        tag2.className = 'flex-1 py-2 px-3 bg-slate-100 border border-slate-300 rounded-xl text-center font-math font-bold text-slate-400 text-base';
+        if (hint) hint.innerText = `已選 ${AppState.pickedPair[0]}，請點選第 2 個數字`;
+      } else {
+        tag1.innerText = AppState.pickedPair[0];
+        tag1.className = 'flex-1 py-2 px-3 bg-indigo-50 border-2 border-indigo-500 rounded-xl text-center font-math font-bold text-indigo-700 text-base shadow-xs';
+        tag2.innerText = AppState.pickedPair[1];
+        tag2.className = 'flex-1 py-2 px-3 bg-indigo-50 border-2 border-indigo-500 rounded-xl text-center font-math font-bold text-indigo-700 text-base shadow-xs';
+        if (hint) hint.innerText = `已選取兩數：${AppState.pickedPair[0]} 與 ${AppState.pickedPair[1]}`;
+      }
+    }
+
+    function refreshPairGridVisuals() {
+      for (let i = 1; i <= 100; i++) {
+        const cell = document.getElementById(`cell-${i}`);
+        if (!cell) continue;
+
+        if (AppState.pickedPair.includes(i)) {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border-3 border-indigo-600 bg-indigo-600 text-white shadow-md scale-105 z-10';
+        } else {
+          cell.className = 'hundred-cell flex items-center justify-center font-math text-xs sm:text-base font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-indigo-400';
+        }
+      }
+    }
+
+    function openGcdModal(n1, n2) {
+      const factors1 = MathUtils.getFactors(n1);
+      const factors2 = MathUtils.getFactors(n2);
+      const commonFactors = factors1.filter(f => factors2.includes(f));
+      const trueGcd = MathUtils.gcd(n1, n2);
+
+      AppState.modalData = {
+        type: 'gcd',
+        n1,
+        n2,
+        factors1,
+        factors2,
+        commonFactors: new Set(commonFactors),
+        trueGcd,
+        selectedCommons: new Set(),
+        selectedMax: null
+      };
+
+      document.getElementById('dialogTitle').innerText = `最大公因數探索：${n1} 與 ${n2}`;
+      document.getElementById('dialogSubtitle').innerText = '點選兩者相同的「公因數」(圈起來變色)，並點擊下方方框指定「最大公因數」';
+      document.getElementById('dialogIcon').className = 'fa-solid fa-diagram-project';
+
+      renderGcdModalBody();
+      openModal();
+    }
+
+    function renderGcdModalBody() {
+      const data = AppState.modalData;
+      const content = document.getElementById('dialogContent');
+
+      const f1Html = data.factors1.map(f => {
+        const isCircled = data.selectedCommons.has(f);
+        const isMaxBox = data.selectedMax === f;
+        let styleClass = 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200';
+        if (isMaxBox) {
+          styleClass = 'box-tag';
+        } else if (isCircled) {
+          styleClass = 'circle-tag';
+        }
+
+        return `
+          <button onclick="toggleModalCommonFactor(${f})" class="px-3.5 py-1.5 rounded-xl font-math font-bold text-sm transition-all duration-150 ${styleClass}">
+            ${f}
+          </button>
+        `;
+      }).join('');
+
+      const f2Html = data.factors2.map(f => {
+        const isCircled = data.selectedCommons.has(f);
+        const isMaxBox = data.selectedMax === f;
+        let styleClass = 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200';
+        if (isMaxBox) {
+          styleClass = 'box-tag';
+        } else if (isCircled) {
+          styleClass = 'circle-tag';
+        }
+
+        return `
+          <button onclick="toggleModalCommonFactor(${f})" class="px-3.5 py-1.5 rounded-xl font-math font-bold text-sm transition-all duration-150 ${styleClass}">
+            ${f}
+          </button>
+        `;
+      }).join('');
+
+      const candidateButtonsHtml = Array.from(data.selectedCommons).sort((a, b) => a - b).map(val => {
+        const isSelectedGcd = data.selectedMax === val;
+        return `
+          <button onclick="setModalMaxTarget(${val})" class="px-4 py-2 rounded-xl font-math font-bold text-sm transition-all ${isSelectedGcd ? 'box-tag' : 'bg-white border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50'}">
+            <i class="fa-solid fa-square-check mr-1 text-indigo-500"></i> ${val}
+          </button>
+        `;
+      }).join('');
+
+      content.innerHTML = `
+        <div class="bg-indigo-50/60 p-3.5 rounded-2xl border border-indigo-100 text-xs text-indigo-950 space-y-1">
+          <p><strong>第一步：</strong> 點擊兩列中出現的「公因數」（點選後會變成粉紅圓圈）。</p>
+          <p><strong>第二步：</strong> 從已圈選的公因數中，在最下方選擇哪一個是「<strong>最大公因數</strong>」（標上方框）。</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-indigo-600 text-white font-math font-bold text-xs">${data.n1}</span>
+            <span class="text-xs font-bold text-slate-700">的所有因數：</span>
+          </div>
+          <div class="flex flex-wrap gap-2 p-3 bg-slate-50/70 rounded-2xl border border-slate-200">
+            ${f1Html}
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-purple-600 text-white font-math font-bold text-xs">${data.n2}</span>
+            <span class="text-xs font-bold text-slate-700">的所有因數：</span>
+          </div>
+          <div class="flex flex-wrap gap-2 p-3 bg-slate-50/70 rounded-2xl border border-slate-200">
+            ${f2Html}
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100">
+          <div class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+            <span>用方框標示出兩者的「最大公因數」：</span>
+            <span class="text-xs text-sky-600 font-semibold">★ 藍色方框標記</span>
+          </div>
+          ${data.selectedCommons.size === 0 
+            ? '<p class="text-xs text-slate-400 italic">請先在上方的因數清單中圈選出共同的因數喔！</p>'
+            : `<div class="flex flex-wrap gap-2.5 items-center">${candidateButtonsHtml}</div>`
+          }
+        </div>
+
+        <div id="modalEvaluationFeedback" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+      `;
+    }
+
+    function toggleModalCommonFactor(val) {
+      const data = AppState.modalData;
+      if (data.selectedCommons.has(val)) {
+        data.selectedCommons.delete(val);
+        if (data.selectedMax === val) data.selectedMax = null;
+      } else {
+        data.selectedCommons.add(val);
+      }
+      AudioEngine.play('highlight');
+      renderGcdModalBody();
+    }
+
+    function setModalMaxTarget(val) {
+      const data = AppState.modalData;
+      data.selectedMax = val;
+      AudioEngine.play('click');
+      renderGcdModalBody();
+    }
+  </script>
+
+  <script>
+    /* Mode 5: LCM (Modal window for two numbers) */
+    function setupLcmMode() {
+      closeFloatingWindow();
+      AppState.pickedPair = [];
+      const title = document.getElementById('modeTitle');
+      const desc = document.getElementById('modeDescription');
+      const subControls = document.getElementById('modeSubControls');
+      const snippet = document.getElementById('knowledgeSnippet');
+      const hintBadge = document.getElementById('gridHintBadge');
+      const actions = document.getElementById('gridActionButtons');
+
+      title.innerText = '最小公倍數 (LCM) 互動';
+      desc.innerHTML = '請在百數表中<strong>點選 2 個數字</strong>，系統會跳出視窗展示這兩數的倍數，請找出<strong>公倍數</strong>並用方框表示<strong>最小公倍數</strong>！';
+      hintBadge.innerText = '請點選第 1 個數字';
+
+      snippet.innerHTML = `
+        <p>• <strong>公倍數 (Common Multiple)</strong>：同時是兩個整數的倍數的數。</p>
+        <p>• <strong>最小公倍數 (LCM)</strong>：在所有公倍數中除 0 以外最小的那一個！</p>
+        <p>• <em>範例</em>：4 和 6 的公倍數有 12, 24, 36... 其中 <strong>12 是最小公倍數</strong>。</p>
+      `;
+
+      subControls.innerHTML = `
+        <div class="space-y-2">
+          <div class="text-xs font-semibold text-slate-600">已挑選的探究數字：</div>
+          <div class="flex items-center gap-2">
+            <div id="pairTag1" class="flex-1 py-2 px-3 bg-slate-100 border border-slate-300 rounded-xl text-center font-math font-bold text-slate-400 text-base">
+              選擇第 1 數
+            </div>
+            <span class="text-slate-400 font-bold">&</span>
+            <div id="pairTag2" class="flex-1 py-2 px-3 bg-slate-100 border border-slate-300 rounded-xl text-center font-math font-bold text-slate-400 text-base">
+              選擇第 2 數
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 pt-1">建議挑選不超過 30 的兩數，倍數更直觀好找喔！</p>
+        </div>
+      `;
+
+      actions.innerHTML = `
+        <button onclick="resetPairSelection()" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition flex items-center gap-1">
+          <i class="fa-solid fa-rotate-left"></i> 重選兩數
+        </button>
+      `;
+
+      refreshPairGridVisuals();
+    }
+
+    function openLcmModal(n1, n2) {
+      const trueLcm = MathUtils.lcm(n1, n2);
+      const minMultiplesToShow = 5;
+      const needed1 = Math.max(minMultiplesToShow, Math.ceil(trueLcm / n1));
+      const needed2 = Math.max(minMultiplesToShow, Math.ceil(trueLcm / n2));
+      const count = Math.min(Math.max(needed1, needed2), 12);
+
+      const multiples1 = MathUtils.getMultiples(n1, count);
+      const multiples2 = MathUtils.getMultiples(n2, count);
+      const commonMultiples = multiples1.filter(m => multiples2.includes(m));
+
+      AppState.modalData = {
+        type: 'lcm',
+        n1,
+        n2,
+        multiplesCount: count,
+        multiples1,
+        multiples2,
+        commonMultiples: new Set(commonMultiples),
+        trueLcm,
+        selectedCommons: new Set(),
+        selectedMin: null
+      };
+
+      document.getElementById('dialogTitle').innerText = `最小公倍數探索：${n1} 與 ${n2}`;
+      document.getElementById('dialogSubtitle').innerText = `呈現這兩個數字的倍數，請圈選「公倍數」並用方框標記「最小公倍數」`;
+      document.getElementById('dialogIcon').className = 'fa-solid fa-arrow-trend-up';
+
+      renderLcmModalBody();
+      openModal();
+    }
+
+    function renderLcmModalBody() {
+      const data = AppState.modalData;
+      const content = document.getElementById('dialogContent');
+
+      const m1Html = data.multiples1.map(m => {
+        const isCircled = data.selectedCommons.has(m);
+        const isMinBox = data.selectedMin === m;
+        let styleClass = 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200';
+        if (isMinBox) {
+          styleClass = 'box-tag';
+        } else if (isCircled) {
+          styleClass = 'circle-tag';
+        }
+
+        return `
+          <button onclick="toggleModalCommonMultiple(${m})" class="px-3.5 py-1.5 rounded-xl font-math font-bold text-sm transition-all duration-150 ${styleClass}">
+            ${m}
+          </button>
+        `;
+      }).join('');
+
+      const m2Html = data.multiples2.map(m => {
+        const isCircled = data.selectedCommons.has(m);
+        const isMinBox = data.selectedMin === m;
+        let styleClass = 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200';
+        if (isMinBox) {
+          styleClass = 'box-tag';
+        } else if (isCircled) {
+          styleClass = 'circle-tag';
+        }
+
+        return `
+          <button onclick="toggleModalCommonMultiple(${m})" class="px-3.5 py-1.5 rounded-xl font-math font-bold text-sm transition-all duration-150 ${styleClass}">
+            ${m}
+          </button>
+        `;
+      }).join('');
+
+      const candidateButtonsHtml = Array.from(data.selectedCommons).sort((a, b) => a - b).map(val => {
+        const isSelectedLcm = data.selectedMin === val;
+        return `
+          <button onclick="setModalMinTarget(${val})" class="px-4 py-2 rounded-xl font-math font-bold text-sm transition-all ${isSelectedLcm ? 'box-tag' : 'bg-white border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50'}">
+            <i class="fa-solid fa-square-check mr-1 text-indigo-500"></i> ${val}
+          </button>
+        `;
+      }).join('');
+
+      content.innerHTML = `
+        <div class="bg-indigo-50/60 p-3.5 rounded-2xl border border-indigo-100 text-xs text-indigo-950 space-y-1">
+          <p><strong>第一步：</strong> 點選兩列倍數中相同的「公倍數」（粉色圓圈變色）。</p>
+          <p><strong>第二步：</strong> 從公倍數中選出最小的那一個，標記為「<strong>最小公倍數</strong>」（方形藍框）。</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-emerald-600 text-white font-math font-bold text-xs">${data.n1}</span>
+              <span class="text-xs font-bold text-slate-700">的倍數：</span>
+            </div>
+            <span class="text-xs text-slate-400">前 ${data.multiples1.length} 個倍數</span>
+          </div>
+          <div class="flex flex-wrap gap-2 p-3 bg-slate-50/70 rounded-2xl border border-slate-200">
+            ${m1Html}
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-teal-600 text-white font-math font-bold text-xs">${data.n2}</span>
+              <span class="text-xs font-bold text-slate-700">的倍數：</span>
+            </div>
+            <span class="text-xs text-slate-400">前 ${data.multiples2.length} 個倍數</span>
+          </div>
+          <div class="flex flex-wrap gap-2 p-3 bg-slate-50/70 rounded-2xl border border-slate-200">
+            ${m2Html}
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100">
+          <div class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+            <span>用方框標示出兩者的「最小公倍數」：</span>
+            <span class="text-xs text-sky-600 font-semibold">★ 藍色方框標記</span>
+          </div>
+          ${data.selectedCommons.size === 0 
+            ? '<p class="text-xs text-slate-400 italic">請先在上方兩列倍數中圈選出共同的公倍數喔！</p>'
+            : `<div class="flex flex-wrap gap-2.5 items-center">${candidateButtonsHtml}</div>`
+          }
+        </div>
+
+        <div id="modalEvaluationFeedback" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+      `;
+    }
+
+    function toggleModalCommonMultiple(val) {
+      const data = AppState.modalData;
+      if (data.selectedCommons.has(val)) {
+        data.selectedCommons.delete(val);
+        if (data.selectedMin === val) data.selectedMin = null;
+      } else {
+        data.selectedCommons.add(val);
+      }
+      AudioEngine.play('highlight');
+      renderLcmModalBody();
+    }
+
+    function setModalMinTarget(val) {
+      const data = AppState.modalData;
+      data.selectedMin = val;
+      AudioEngine.play('click');
+      renderLcmModalBody();
+    }
+
+    function verifyModalAction() {
+      const data = AppState.modalData;
+      if (!data) return;
+
+      const feedback = document.getElementById('modalEvaluationFeedback');
+      feedback.classList.remove('hidden');
+
+      if (data.type === 'gcd') {
+        const trueGcd = data.trueGcd;
+        const allCommonsFound = Array.from(data.commonFactors).every(cf => data.selectedCommons.has(cf));
+        const noWrongCommons = Array.from(data.selectedCommons).every(sc => data.commonFactors.has(sc));
+        const gcdBoxCorrect = data.selectedMax === trueGcd;
+
+        if (allCommonsFound && noWrongCommons && gcdBoxCorrect) {
+          AudioEngine.play('success');
+          feedback.className = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2 animate-pop';
+          feedback.innerHTML = `
+            <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+            <div>
+              <strong>完全正確！</strong> ${data.n1} 與 ${data.n2} 的公因數為 [${Array.from(data.commonFactors).join(', ')}]，<strong>最大公因數就是 ${trueGcd}</strong>！
+            </div>
+          `;
+          showToast('太棒了！成功找出公因數與最大公因數！', 'success');
+        } else {
+          AudioEngine.play('wrong');
+          feedback.className = 'p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2';
+          let message = '尚未完全正確喔：';
+          if (!allCommonsFound || !noWrongCommons) {
+            message += ' 請確認兩列中「所有相同的因數」都已經圈起來了；';
+          }
+          if (!gcdBoxCorrect) {
+            message += ' 請記得在最下方點選方框選出最大的公因數！';
+          }
+          feedback.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-600 text-base"></i> <span>${message}</span>`;
+        }
+
+      } else if (data.type === 'lcm') {
+        const trueLcm = data.trueLcm;
+        const hasFoundLcmInCommons = data.selectedCommons.has(trueLcm);
+        const lcmBoxCorrect = data.selectedMin === trueLcm;
+
+        if (hasFoundLcmInCommons && lcmBoxCorrect) {
+          AudioEngine.play('success');
+          feedback.className = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2 animate-pop';
+          feedback.innerHTML = `
+            <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+            <div>
+              <strong>完全正確！</strong> 成功找出共同倍數，並且以方框標記出<strong>最小公倍數 = ${trueLcm}</strong>！
+            </div>
+          `;
+          showToast('恭喜答對！成功找出公倍數與最小公倍數！', 'success');
+        } else {
+          AudioEngine.play('wrong');
+          feedback.className = 'p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2';
+          let message = '請再檢查一下：';
+          if (!hasFoundLcmInCommons) {
+            message += ` 請圈選出同時出現在兩數倍數列表中的數字（${trueLcm}）；`;
+          }
+          if (!lcmBoxCorrect) {
+            message += ' 請在最下方以方框選中「最小」的那一個公倍數！';
+          }
+          feedback.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-600 text-base"></i> <span>${message}</span>`;
+        }
+      }
+    }
+
+    function openModal() {
+      const backdrop = document.getElementById('mathDialogBackdrop');
+      const container = document.getElementById('mathDialogContainer');
+      backdrop.classList.remove('hidden');
+      setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        container.classList.remove('scale-95');
+      }, 10);
+    }
+
+    function closeModal() {
+      const backdrop = document.getElementById('mathDialogBackdrop');
+      const container = document.getElementById('mathDialogContainer');
+      backdrop.classList.add('opacity-0');
+      container.classList.add('scale-95');
+      setTimeout(() => {
+        backdrop.classList.add('hidden');
+      }, 300);
+    }
+  </script>
+
+  <script>
+    function switchMode(newMode) {
+      AppState.currentMode = newMode;
+      AudioEngine.play('click');
+      closeFloatingWindow();
+
+      document.querySelectorAll('.mode-tab').forEach(tab => {
+        tab.className = 'mode-tab px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900';
+      });
+      const activeTab = document.getElementById(`tab-${newMode}`);
+      if (activeTab) {
+        activeTab.className = 'mode-tab active px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-white text-indigo-600 shadow-xs';
+      }
+
+      renderHundredGrid();
+
+      switch (newMode) {
+        case 'prime_composite':
+          setupPrimeCompositeMode();
+          break;
+        case 'factors':
+          setupFactorsMode();
+          break;
+        case 'prime_factorization':
+          setupFactorizationMode();
+          break;
+        case 'gcd':
+          setupGcdMode();
+          break;
+        case 'lcm':
+          setupLcmMode();
+          break;
+      }
+    }
+
+    function resetCurrentMode() {
+      AudioEngine.play('click');
+      switchMode(AppState.currentMode);
+      showToast('已重設目前學習頁面！', 'info');
+    }
+
+    // Initialize application on window load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderHundredGrid();
+      setupPrimeCompositeMode();
+    });
+  </script>
+</body>
+</html>
