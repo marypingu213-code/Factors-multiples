@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>互動百數表趣味數學探險</title>
+  <title>10×10 百數表互動數學探索館</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
+  <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- QRCode.js for student quick join -->
+  <!-- QRCode.js for student fast access -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- Google Fonts: Noto Sans TC & Roboto for formal textbook numbers -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,13 +21,13 @@
       user-select: none;
       -webkit-user-select: none;
     }
-    /* 正式學校數學教科書標準字體，利於學習遷移 */
+    /* 正式學校數學教科書標準字體，清晰易辨識，利於學習遷移 */
     .font-formal-math {
       font-family: 'Roboto', 'Noto Sans TC', system-ui, sans-serif;
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.02em;
     }
-    /* Custom scrollbar */
+    /* 自訂捲軸樣式 */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -39,14 +39,15 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
     }
-    /* Pulsing & pop animations */
+    /* 彈出浮動視窗動畫 */
     @keyframes popIn {
-      0% { transform: scale(0.85); opacity: 0; }
+      0% { transform: scale(0.88); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
     .animate-pop {
       animation: popIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
+    /* 圈起來粉色質因數/公因數/公倍數標記 */
     .circle-tag {
       border: 3px solid #ec4899 !important;
       border-radius: 9999px !important;
@@ -56,13 +57,14 @@
       transform: scale(1.08);
       box-shadow: 0 0 0 3px #fbcfe8;
     }
+    /* 藍色方框最大公因數/最小公倍數標記 */
     .box-tag {
-      border: 3.5px solid #0284c7;
-      border-radius: 8px;
-      background-color: #e0f2fe;
-      color: #0369a1;
-      font-weight: 800;
-      box-shadow: 0 0 0 3px #bae6fd;
+      border: 3.5px solid #0284c7 !important;
+      border-radius: 8px !important;
+      background-color: #e0f2fe !important;
+      color: #0369a1 !important;
+      font-weight: 800 !important;
+      box-shadow: 0 0 0 3px #bae6fd !important;
       transform: scale(1.1);
     }
   </style>
@@ -149,18 +151,17 @@
           </div>
         </div>
 
-        <!-- Mobile QR & Teacher buttons -->
+        <!-- Mobile Buttons -->
         <div class="flex md:hidden items-center gap-1.5">
-          <button onclick="openQrModal()" class="p-2 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold">
+          <button onclick="openQrModal()" class="p-2 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold" title="掃描 QR Code">
             <i class="fa-solid fa-qrcode"></i>
           </button>
-          <button onclick="openTeacherDashboard()" class="p-2 rounded-lg bg-amber-50 text-amber-800 text-xs font-semibold">
+          <button onclick="openTeacherDashboard()" class="p-2 rounded-lg bg-amber-50 text-amber-800 text-xs font-semibold" title="教師後台">
             <i class="fa-solid fa-chalkboard-user"></i>
           </button>
         </div>
       </div>
 
-      <!-- Student Badge & Controls -->
       <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
         <!-- Current Student Tag -->
         <div id="studentBadgeContainer" onclick="openStudentLoginModal()" class="cursor-pointer bg-slate-100 hover:bg-slate-200/80 px-3 py-1.5 rounded-xl border border-slate-200 text-xs flex items-center gap-2 transition">
@@ -191,7 +192,6 @@
       </div>
     </div>
 
-    <!-- 5 Mode Tabs -->
     <div class="max-w-6xl mx-auto px-2 sm:px-4 pb-2 sm:pb-3 overflow-x-auto">
       <nav class="flex space-x-1 sm:space-x-2 min-w-max p-1 bg-slate-100/90 rounded-xl" id="navContainer">
         <button onclick="switchMode('prime_composite')" id="tab-prime_composite" class="mode-tab active px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-white text-indigo-600 shadow-xs">
@@ -253,7 +253,7 @@
       <!-- Active Student Status Card -->
       <div class="bg-indigo-50/70 border border-indigo-200/80 rounded-2xl p-4 text-xs text-indigo-900">
         <div class="flex items-center justify-between font-bold mb-1 text-indigo-950">
-          <span><i class="fa-solid fa-clipboard-check text-indigo-600 mr-1"></i> 學習紀錄狀態</span>
+          <span><i class="fa-solid fa-clipboard-check text-indigo-600 mr-1"></i> 學習歷程狀態</span>
           <span id="sessionStatusDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
         </div>
         <p id="studentInfoText" class="text-indigo-700 leading-relaxed">目前尚未登入。點選上方登入即可將每次作答儲存至教師後台！</p>
@@ -261,14 +261,13 @@
 
     </section>
 
-    <!-- Right Column: 10x10 Hundred Chart & Dynamic Floating Under-Cell Windows -->
     <section class="lg:col-span-8 flex flex-col gap-4">
       
       <!-- Chart Controls Header -->
       <div class="bg-white p-3 sm:px-5 sm:py-3.5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 shadow-xs">
         <div class="flex items-center gap-2">
           <span class="font-bold text-slate-700 text-sm flex items-center gap-1.5">
-            <i class="fa-solid fa-border-all text-indigo-500"></i> 1 ~ 100 正式百數方格
+            <i class="fa-solid fa-border-all text-indigo-500"></i> 1 ~ 100 正式教科書百數方格
           </span>
           <span id="gridHintBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
             請點選格子
@@ -505,7 +504,6 @@
     let currentUser = null;
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'hundred-chart-app';
 
-    // In-memory / persistent profile fallback cache
     window.StorageService = {
       logs: [],
       profiles: [],
@@ -523,11 +521,10 @@
               await signInAnonymously(auth);
             }
             currentUser = auth.currentUser;
-            console.log('Firebase initialized. User:', currentUser?.uid);
             await this.syncFromCloud();
           }
         } catch (e) {
-          console.warn('Running with local mock storage:', e);
+          console.warn('Running with local session storage:', e);
         }
       },
 
@@ -540,7 +537,6 @@
           snap.forEach(docSnap => {
             list.push({ id: docSnap.id, ...docSnap.data() });
           });
-          // Sort descending by timestamp in JS memory (Strict Rule 2)
           list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
           this.logs = list;
           this.extractProfiles();
@@ -567,7 +563,6 @@
         logEntry.timeFormatted = new Date().toLocaleString('zh-TW', { hour12: false });
         this.logs.unshift(logEntry);
 
-        // Add profile if new
         const exists = this.profiles.some(p => p.className === logEntry.className && p.studentCode === logEntry.studentCode);
         if (!exists) {
           this.profiles.push({ className: logEntry.className, studentCode: logEntry.studentCode });
@@ -671,7 +666,7 @@
     const AppState = {
       currentMode: 'prime_composite',
       
-      // Student Info
+      // Student Profile
       studentClass: '',
       studentCode: '',
       isLoggedIn: false,
@@ -758,11 +753,10 @@
       AppState.studentCode = code;
       AppState.isLoggedIn = true;
 
-      // Update UI labels
       document.getElementById('currentStudentLabel').innerText = `${cls} - ${code} 號`;
-      document.getElementById('studentInfoText').innerHTML = `目前作答學生：<strong>${cls}</strong> 班 <strong>${code}</strong> 號。每次提交都會記錄於後台。`;
+      document.getElementById('studentInfoText').innerHTML = `目前作答學生：<strong>${cls}</strong> 班 <strong>${code}</strong> 號。每次作答均自動保存歷程。`;
       AudioEngine.play('success');
-      showToast(`已登入：${cls} 班 ${code} 號，歡迎作答！`, 'success');
+      showToast(`已切換身分：${cls} 班 ${code} 號！`, 'success');
     }
 
     function renderQuickProfiles() {
@@ -781,7 +775,6 @@
       `).join('');
     }
 
-    // Centralized function to log student activity
     function logStudentActivity(modeName, selectedNumbers, correctnessText, isCorrect) {
       const className = AppState.studentClass || '未填班級';
       const studentCode = AppState.studentCode || '訪客';
@@ -891,7 +884,6 @@
       const filterClass = document.getElementById('filterClassSelect')?.value || 'ALL';
       const filterStudent = document.getElementById('filterStudentSelect')?.value || 'ALL';
 
-      // JavaScript memory filtering and sorting (Rule 2)
       let filtered = logs.filter(item => {
         const matchClass = filterClass === 'ALL' || item.className === filterClass;
         const matchStudent = filterStudent === 'ALL' || item.studentCode === filterStudent;
@@ -908,8 +900,6 @@
 
       placeholder.classList.add('hidden');
       
-      // Calculate session index for each student (第1次, 第2次...)
-      // Group by student to count attempts in chronological order
       const studentAttemptCounter = new Map();
       const sortedAsc = [...logs].reverse();
       const logToAttemptMap = new Map();
@@ -973,7 +963,6 @@
         const cell = document.createElement('button');
         cell.id = `cell-${i}`;
         cell.dataset.number = i;
-        // Formal textbook styling: high legibility, clean tabular-nums
         cell.className = `hundred-cell flex items-center justify-center font-formal-math text-sm sm:text-base font-bold rounded-xl border border-slate-200 transition-all duration-150 relative select-none hover:border-indigo-400 hover:shadow-xs focus:outline-hidden ${getCellBaseStyle(i)}`;
         cell.innerHTML = `<span>${i}</span>`;
         cell.addEventListener('click', () => handleCellClick(i));
@@ -1225,7 +1214,6 @@
       const isPerfect = (wrongPicks === 0 && correctPicks === totalTargets);
       const resultText = `答對 ${correctPicks}/${totalTargets}，點錯 ${wrongPicks} 個`;
 
-      // Log to Teacher backend
       logStudentActivity(
         isTargetPrime ? '1. 質數挑戰' : '1. 合數挑戰',
         Array.from(AppState.selectedCells).sort((a, b) => a - b),
@@ -1427,7 +1415,6 @@
       const primeListStr = Array.from(correctPrimes).join(', ') || '無質因數（數字1）';
       const logText = allCorrect ? `完全正確！質因數為 [${primeListStr}]` : `選取 [${userPicksStr}]，正解應為 [${primeListStr}]`;
 
-      // Log to teacher backend
       logStudentActivity('2. 因數與質因數', [num], logText, allCorrect);
 
       if (allCorrect) {
@@ -1504,7 +1491,6 @@
 
       renderFactorizationFloatingWindow(num);
 
-      // Log student inspection of factorization
       if (num > 1) {
         const primeFactors = MathUtils.getPrimeFactorization(num);
         const expandedList = [];
@@ -1543,7 +1529,6 @@
       const primeFactors = MathUtils.getPrimeFactorization(num);
       const isPrime = MathUtils.isPrime(num);
 
-      // Expanded form: e.g. 2 × 2 × 3 × 5
       const expandedList = [];
       primeFactors.forEach(pf => {
         for (let i = 0; i < pf.count; i++) {
@@ -1551,8 +1536,6 @@
         }
       });
       const expandedFormula = expandedList.join(' × ');
-
-      // Distinct prime factors: e.g. 2, 3, 5
       const distinctPrimesStr = primeFactors.map(pf => pf.prime).join(', ');
 
       windowBody.innerHTML = `
@@ -1583,7 +1566,7 @@
             </div>
           </div>
 
-          <!-- 2. 該數的質因數包括 (字體大小與上方展開式完全相同) -->
+          <!-- 2. 該數的質因數包括 (字級樣式完全相同) -->
           <div class="p-4 rounded-2xl bg-violet-50/80 border border-violet-200/90 shadow-2xs">
             <div class="text-xs text-violet-700 font-bold mb-1.5 flex items-center gap-1.5">
               <i class="fa-solid fa-seedling text-emerald-600"></i>
@@ -2057,7 +2040,6 @@
           ? `完全正確！公因數為 [${Array.from(data.commonFactors).join(', ')}]，最大公因數為 ${trueGcd}` 
           : `作答未完全正確 (選定GCD: ${data.selectedMax || '未選'}，正解為 ${trueGcd})`;
 
-        // Log to Teacher backend
         logStudentActivity('4. 最大公因數', [data.n1, data.n2], logMsg, isOverallCorrect);
 
         if (isOverallCorrect) {
@@ -2093,7 +2075,6 @@
           ? `完全正確！圈選公倍數並標記最小公倍數 = ${trueLcm}` 
           : `作答未完全正確 (選定LCM: ${data.selectedMin || '未選'}，正解為 ${trueLcm})`;
 
-        // Log to Teacher backend
         logStudentActivity('5. 最小公倍數', [data.n1, data.n2], logMsg, isOverallCorrect);
 
         if (isOverallCorrect) {
@@ -2183,7 +2164,6 @@
       showToast('已重設目前學習百數表！', 'info');
     }
 
-    // Initialize application on window load
     window.addEventListener('DOMContentLoaded', () => {
       renderHundredGrid();
       setupPrimeCompositeMode();
